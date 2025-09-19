@@ -18,11 +18,25 @@ class _ProductListState extends State<ProductList> {
   @override
   void initState() {
     super.initState();
-    products = box.get('products', defaultValue: []);
+    products = box.get('products') ?? [];
   }
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp();
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Product List'),
+      ),
+      body: ListView.builder(
+        itemCount: products.length,
+        itemBuilder: (context, index) {
+          final product = products[index];
+          return ListTile(
+            title: Text(product['name']),
+            subtitle: Text('Category: ${product['category']} - Expiry: ${product['expiryDate']}'),
+          );
+        },
+      ),
+    );
   }
 }

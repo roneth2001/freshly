@@ -18,10 +18,6 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false, // Removes debug banner
-      title: 'Freshly App',
-      theme: ThemeData(
-        primarySwatch: Colors.green,
-      ),
       home: const ProductList() // Your home screen
     );
   }
