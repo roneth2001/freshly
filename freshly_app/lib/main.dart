@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:freshly_app/screens/home.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 
-void main() {
+void main() async {
+
+  await Hive.initFlutter();
+  await Hive.openBox('productsBox');
+
   runApp(const MyApp());
 }
 
@@ -17,7 +22,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.green,
       ),
-      home: const MainScreen(), // Your home screen
+      home: const ProductList() // Your home screen
     );
   }
 }
