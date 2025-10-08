@@ -1,15 +1,20 @@
 class FoodItem {
+  final String id;
   final String name;
   final String category;
+  final DateTime purchaserDate;
   final DateTime expiryDate;
-  final String? imagePath;
+  final int quantity;
 
   FoodItem({
+    required this.id,
     required this.name,
     required this.category,
+    required this.purchaserDate,
     required this.expiryDate,
-    this.imagePath,
+    required this.quantity,
   });
+
 
   // Helper method to check if item is expiring soon
   bool get isExpiringSoon {
