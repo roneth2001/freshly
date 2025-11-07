@@ -1,7 +1,20 @@
 import 'package:flutter/material.dart';
 import 'screens/home_screen.dart';
+import 'services/notification_service.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  // Initialize notification service
+  final notificationService = NotificationService();
+  await notificationService.initialize();
+  
+  // Schedule notifications for all existing items
+  await notificationService.scheduleAllNotifications();
+  
+  // Check for expired items
+  await notificationService.checkExpiredItems();
+  
   runApp(const MyApp());
 }
 

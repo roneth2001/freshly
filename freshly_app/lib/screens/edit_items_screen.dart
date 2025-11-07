@@ -1,28 +1,47 @@
 import 'package:flutter/material.dart';
-import 'package:freshly_app/services/notification_service.dart';
 import '../db/database_helper.dart';
 import '../models/item_model.dart';
+import '../services/notification_service.dart';
 
-class AddItemScreen extends StatefulWidget {
-  const AddItemScreen({super.key});
+class EditItemScreen extends StatefulWidget {
+  final Item item;
+
+  const EditItemScreen({super.key, required this.item});
 
   @override
-  State<AddItemScreen> createState() => _AddItemScreenState();
+  State<EditItemScreen> createState() => _EditItemScreenState();
 }
 
-class _AddItemScreenState extends State<AddItemScreen> {
+class _EditItemScreenState extends State<EditItemScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController();
-  final _quantityController = TextEditingController();
-  DateTime? _purchaseDate;
-  DateTime? _expiryDate;
+  late TextEditingController _nameController;
+  late TextEditingController _quantityController;
+  late DateTime _purchaseDate;
+  late DateTime _expiryDate;
 
   final dbHelper = DatabaseHelper();
+  final notificationService = NotificationService();
+
+  @override
+  void initState() {
+    super.initState();
+    _nameController = TextEditingController(text: widget.item.name);
+    _quantityController = TextEditingController(text: widget.item.quantity.toString());
+    _purchaseDate = DateTime.parse(widget.item.purchaseDate);
+    _expiryDate = DateTime.parse(widget.item.expiryDate);
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _quantityController.dispose();
+    super.dispose();
+  }
 
   Future<void> _selectDate(bool isPurchase) async {
     final DateTime? picked = await showDatePicker(
       context: context,
-      initialDate: DateTime.now(),
+      initialDate: isPurchase ? _purchaseDate : _expiryDate,
       firstDate: DateTime(2020),
       lastDate: DateTime(2100),
       builder: (context, child) {
@@ -49,27 +68,80 @@ class _AddItemScreenState extends State<AddItemScreen> {
     }
   }
 
-  Future<void> _saveItem() async {
-    if (_formKey.currentState!.validate() &&
-        _purchaseDate != null &&
-        _expiryDate != null) {
-      final newItem = Item(
+  Future<void> _updateItem() async {
+    if (_formKey.currentState!.validate()) {
+      final updatedItem = Item(
+        id: widget.item.id,
         name: _nameController.text.trim(),
-        purchaseDate: _purchaseDate!.toIso8601String(),
-        expiryDate: _expiryDate!.toIso8601String(),
+        purchaseDate: _purchaseDate.toIso8601String(),
+        expiryDate: _expiryDate.toIso8601String(),
         quantity: int.parse(_quantityController.text),
       );
 
-      final itemId = await dbHelper.insertItem(newItem.toMap());
+      await dbHelper.updateItem(updatedItem.toMap());
       
-      // Schedule notification
-      await NotificationService().scheduleItemNotification(
-        itemId,
-        newItem.name,
-        _expiryDate!,
+      // Reschedule notification with new expiry date
+      await notificationService.scheduleItemNotification(
+        widget.item.id!,
+        updatedItem.name,
+        _expiryDate,
       );
       
-      Navigator.pop(context);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Item updated successfully'),
+            backgroundColor: Color(0xFF7CB342),
+          ),
+        );
+        Navigator.pop(context, true); // Return true to indicate update
+      }
+    }
+  }
+
+  Future<void> _deleteItem() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Item'),
+        content: const Text('Are you sure you want to delete this item?'),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: Colors.grey),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text(
+              'Delete',
+              style: TextStyle(color: Colors.red),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      await dbHelper.deleteItem(widget.item.id!);
+      
+      // Cancel notification
+      await notificationService.cancelNotification(widget.item.id!);
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Item deleted successfully'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        Navigator.pop(context, true); // Return true to indicate deletion
+      }
     }
   }
 
@@ -78,10 +150,17 @@ class _AddItemScreenState extends State<AddItemScreen> {
     return Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
-        title: const Text("Add Item"),
+        title: const Text("Edit Item"),
         backgroundColor: const Color(0xFF7CB342),
         foregroundColor: Colors.white,
         elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.delete),
+            onPressed: _deleteItem,
+            tooltip: 'Delete Item',
+          ),
+        ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(16),
@@ -148,24 +227,20 @@ class _AddItemScreenState extends State<AddItemScreen> {
                   children: [
                     ListTile(
                       leading: const Icon(Icons.calendar_today, color: Color(0xFF7CB342)),
-                      title: Text(
-                        _purchaseDate == null
-                            ? "Select Purchase Date"
-                            : "Purchase Date",
+                      title: const Text(
+                        "Purchase Date",
                         style: TextStyle(
-                          color: _purchaseDate == null ? Colors.grey[600] : Colors.black87,
+                          color: Colors.black87,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
-                      subtitle: _purchaseDate != null
-                          ? Text(
-                              "${_purchaseDate!.toLocal()}".split(' ')[0],
-                              style: const TextStyle(
-                                color: Color(0xFF689F38),
-                                fontSize: 16,
-                              ),
-                            )
-                          : null,
+                      subtitle: Text(
+                        "${_purchaseDate.toLocal()}".split(' ')[0],
+                        style: const TextStyle(
+                          color: Color(0xFF689F38),
+                          fontSize: 16,
+                        ),
+                      ),
                       trailing: Container(
                         decoration: BoxDecoration(
                           color: const Color(0xFF9CCC65),
@@ -180,24 +255,20 @@ class _AddItemScreenState extends State<AddItemScreen> {
                     const Divider(height: 1),
                     ListTile(
                       leading: const Icon(Icons.event_available, color: Color(0xFF7CB342)),
-                      title: Text(
-                        _expiryDate == null
-                            ? "Select Expiry Date"
-                            : "Expiry Date",
+                      title: const Text(
+                        "Expiry Date",
                         style: TextStyle(
-                          color: _expiryDate == null ? Colors.grey[600] : Colors.black87,
+                          color: Colors.black87,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
-                      subtitle: _expiryDate != null
-                          ? Text(
-                              "${_expiryDate!.toLocal()}".split(' ')[0],
-                              style: const TextStyle(
-                                color: Color(0xFF689F38),
-                                fontSize: 16,
-                              ),
-                            )
-                          : null,
+                      subtitle: Text(
+                        "${_expiryDate.toLocal()}".split(' ')[0],
+                        style: const TextStyle(
+                          color: Color(0xFF689F38),
+                          fontSize: 16,
+                        ),
+                      ),
                       trailing: Container(
                         decoration: BoxDecoration(
                           color: const Color(0xFF9CCC65),
@@ -214,7 +285,7 @@ class _AddItemScreenState extends State<AddItemScreen> {
               ),
               const SizedBox(height: 24),
               ElevatedButton(
-                onPressed: _saveItem,
+                onPressed: _updateItem,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF7CB342),
                   foregroundColor: Colors.white,
@@ -225,7 +296,7 @@ class _AddItemScreenState extends State<AddItemScreen> {
                   elevation: 3,
                 ),
                 child: const Text(
-                  "Save Item",
+                  "Update Item",
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
               ),

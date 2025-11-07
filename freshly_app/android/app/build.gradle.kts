@@ -25,11 +25,21 @@ android {
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
-        targetSdk = flutter.targetSdkVersion
-        versionCode = flutter.versionCode
-        versionName = flutter.versionName
+        targetSdk = 34
+        versionCode = 1
+        versionName = "1.0"
+    }
+    // ✅ Enable Java 17 + desugaring
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+        coreLibraryDesugaringEnabled true
     }
 
+    // ✅ Kotlin to 17
+    kotlinOptions {
+        jvmTarget = '17'
+    }
     buildTypes {
         release {
             // TODO: Add your own signing config for the release build.

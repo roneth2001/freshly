@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:freshly_app/screens/edit_items_screen.dart';
 import '../db/database_helper.dart';
 import '../models/item_model.dart';
 import 'add_item_screen.dart';
@@ -43,6 +44,13 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     await Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => const AddItemScreen()),
+    );
+    _loadItems();
+  }
+  void _navigateToEditItem(Item item) async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => EditItemScreen(item: item)),
     );
     _loadItems();
   }
@@ -240,9 +248,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           color: Colors.transparent,
           child: InkWell(
             borderRadius: BorderRadius.circular(20),
-            onTap: () {
-              // Handle item tap if needed
-            },
+            onTap: () => _navigateToEditItem(item),
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Row(
@@ -280,7 +286,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                                 size: 14, color: Colors.grey.shade600),
                             const SizedBox(width: 4),
                             Text(
-                              item.expiryDate,
+                              DateTime.parse(item.expiryDate).toLocal().toString().split(' ')[0],
                               style: TextStyle(
                                 fontSize: 14,
                                 color: Colors.grey.shade600,
