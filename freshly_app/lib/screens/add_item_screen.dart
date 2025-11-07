@@ -19,6 +19,10 @@ class _AddItemScreenState extends State<AddItemScreen> {
 
   final dbHelper = DatabaseHelper();
 
+  get _purchaseDateController => _purchaseDate;
+
+  get _expireDateController => _expiryDate;
+
   Future<void> _selectDate(bool isPurchase) async {
     final DateTime? picked = await showDatePicker(
       context: context,
@@ -214,7 +218,15 @@ class _AddItemScreenState extends State<AddItemScreen> {
               ),
               const SizedBox(height: 24),
               ElevatedButton(
-                onPressed: _saveItem,
+                onPressed: () {
+                  _saveItem(); // Save the item
+
+                  // Clear all text fields
+                  _nameController.clear();
+                  _purchaseDateController.clear();
+                  _expireDateController.clear();
+                  _quantityController.clear();
+                },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF7CB342),
                   foregroundColor: Colors.white,
